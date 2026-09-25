@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Ejecutar jairo_tableview",
+            "request": "launch",
+            "mainClass": "com.jairoben.Launcher",
+            "projectName": "jairo_tableview"
+        }
+    ]
+}

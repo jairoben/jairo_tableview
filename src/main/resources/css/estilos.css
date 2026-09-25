@@ -1,0 +1,5 @@
+/* Borde azul alrededor del área de contenido de la ventana */
+.borde-azul {
+    -fx-border-color: #2f6fed;
+    -fx-border-width: 3;
+}
