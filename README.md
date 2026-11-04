@@ -3,6 +3,16 @@
 Aplicación de escritorio en **JavaFX** que gestiona una lista de personas en una tabla:
 permite añadir filas, borrar las seleccionadas y restaurar los datos iniciales.
 
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)
+![JavaFX](https://img.shields.io/badge/JavaFX-007396?style=for-the-badge&logo=java&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white)
+
+## Tecnologías
+
+- **Java** (JDK 11 o superior)
+- **JavaFX** (interfaz gráfica)
+- **Maven** (gestión de dependencias y build)
+
 ## Requisitos
 
 - JDK 11 o superior
@@ -135,3 +145,8 @@ resources.getString("aviso.campos.obligatorios")
 | `bt` | Button | `btAdd`, `btRestore` |
 | `tv` | TableView | `tvPeople` |
 | `col` | TableColumn | `colLastName` |
+
+## Licencia
+
+Este proyecto está bajo la licencia [MIT](LICENSE).
+
