@@ -1,11 +1,6 @@
-﻿target/
-*.class
-*.log
+target/
+*.db
+*.db-journal
 .idea/
 *.iml
-.vscode/*
-!.vscode/launch.json
-.settings/
-.project
-.classpath
-db.properties
+.vscode/

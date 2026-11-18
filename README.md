@@ -1,152 +1,118 @@
-# jairo_tableview
+# AgendaFX
 
-Aplicación de escritorio en **JavaFX** que gestiona una lista de personas en una tabla:
-permite añadir filas, borrar las seleccionadas y restaurar los datos iniciales.
+[![CI](https://github.com/jairoben/jairo_tableview/actions/workflows/ci.yml/badge.svg)](https://github.com/jairoben/jairo_tableview/actions/workflows/ci.yml)
 
-![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)
-![JavaFX](https://img.shields.io/badge/JavaFX-007396?style=for-the-badge&logo=java&logoColor=white)
-![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white)
+Gestor de contactos de escritorio hecho con **JavaFX** y **SQLite**. La tabla se edita desde un
+formulario lateral, la búsqueda filtra mientras escribes y los datos se guardan en un fichero
+SQLite, así que siguen ahí al cerrar y volver a abrir la aplicación.
 
-## Tecnologías
+![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![JavaFX](https://img.shields.io/badge/JavaFX-21-007396?style=for-the-badge&logo=openjdk&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)
 
-- **Java** (JDK 11 o superior)
-- **JavaFX** (interfaz gráfica)
-- **Maven** (gestión de dependencias y build)
+## Qué hace
+
+- **CRUD completo**: alta de contactos, edición del seleccionado y borrado con confirmación.
+- **Búsqueda en vivo** por nombre, apellidos o correo, sin recargar la tabla.
+- **Persistencia real** en SQLite (un fichero, sin servidor ni instalación aparte).
+- **Validación en el dominio**: campos obligatorios, formato de correo, longitudes y fechas futuras.
+- **Correo único**: la base de datos tiene índice único y el servicio avisa antes de repetirlo.
+- **Logs** con SLF4J + Logback y **22 tests** automáticos que cubren dominio e infraestructura.
 
 ## Requisitos
 
-- JDK 11 o superior
-- Maven (o el gestor de build del IDE)
-- JavaFX se descarga automáticamente como dependencia Maven (`javafx-controls`, `javafx-fxml` 13)
+- JDK 21
+- Maven 3.9 o superior
 
-## Compilar y ejecutar
+## Cómo ejecutarlo
 
 ```bash
-mvn clean javafx:run
+mvn javafx:run
 ```
 
-`clean` es recomendable: elimina copias antiguas de FXML/CSS de la carpeta `target`.
+La base de datos se crea sola en `~/.agendafx/agenda.db`. Para usar otra ruta:
 
-**Desde VS Code** (F5 o *Run*): la clase principal es `com.jairoben.Launcher`,
-configurada en `.vscode/launch.json`. Se usa un lanzador auxiliar porque JavaFX
-falla con «JavaFX runtime components are missing» cuando el `main` está en una
-clase que extiende `Application` y se ejecuta por classpath (como hace el JRE
-embebido de la extensión de Java).
-
-## Estructura del proyecto
-
-```
-src/main/
-├── java/
-│   └── com/jairoben/
-│       ├── App.java                // Arranque JavaFX (escena, límites, bundle)
-│       ├── Launcher.java           // Lanzador para IDEs (no extiende Application)
-│       ├── Person.java             // Modelo de datos
-│       └── PrimaryController.java  // Controlador de la vista principal
-└── resources/
-    ├── fxml/primary.fxml           // Interfaz (montada en Scene Builder)
-    ├── css/estilos.css             // Hoja de estilos (borde azul)
-    └── strings.properties          // Textos de la aplicación (i18n)
+```bash
+mvn javafx:run -Dagenda.db=./agenda.db
 ```
 
-## Cómo funciona la aplicación
+Compilar y pasar los tests:
 
-### Arranque (`App.java`)
-
-1. `main()` lanza la aplicación JavaFX.
-2. `start(Stage)` carga `fxml/primary.fxml` con un `FXMLLoader` y lo mete en una `Scene`.
-3. Se fijan los límites de la ventana: mínimo **520×560** (para que no se recorte el
-   campo *Birth Date*) y máximo **760×820** (para que no se desborde).
-4. La ventana se muestra con el tamaño *preferred* del FXML (520×560).
-
-### Interfaz (`primary.fxml`)
-
-Raíz `BorderPane` con la clase CSS `borde-azul`:
-
-- **`top`** → `VBox` con un `GridPane` (First Name, Last Name, Birth Date + botón *Add*)
-  y un `HBox` con *Restore Rows* y *Delete Selected Rows*.
-- **`center`** → `TableView` con las columnas **Id**, **First Name**, **Last Name**, **Birth Date**.
-
-Los `fx:id` del FXML son los nombres de los campos `@FXML` del controlador
-(`tfFirstName`, `tfLastName`, `dpBirth`, `btAdd`, `btRestore`, `btDeleteSelected`,
-`tvPeople`, `colId`, `colFirstName`, `colLastName`, `colBirthDate`), y los `onAction`
-apuntan a los métodos `#add`, `#restore` y `#deleteSelected`.
-
-### Modelo (`Person.java`)
-
-- `id` autoincremental (`static nextId`): no se teclea, se asigna al crear la persona.
-- `firstName`, `lastName` (`String`) y `birthDate` (`LocalDate`).
-- Los **getters son obligatorios**: `PropertyValueFactory` los busca por reflexión para
-  rellenar cada columna de la tabla.
-
-### Controlador (`PrimaryController.java`)
-
-`initialize()` se ejecuta **solo**, automáticamente, cuando el `FXMLLoader` termina de
-cargar el FXML, antes de que se vea la ventana. Ahí:
-
-1. Se enlazan las 4 columnas con `new PropertyValueFactory<>("propiedad")`.
-2. Se activa `SelectionMode.MULTIPLE` (Ctrl+clic / Mayús+clic para selección múltiple).
-3. Se cargan las 5 filas de ejemplo en `datosIniciales` y se copian a `datos`.
-4. `tvPeople.setItems(datos)` pinta la tabla.
-
-La tabla **siempre** se pinta desde `datos`. `datosIniciales` nunca se modifica: es la
-copia de seguridad que usa *Restore Rows*.
-
-| Botón | Método | Qué hace |
-|---|---|---|
-| Add | `add()` | Valida que First Name, Last Name y Birth Date estén rellenos (si no, muestra un `Alert`), crea un `Person`, lo añade a `datos` y limpia los campos |
-| Delete Selected Rows | `deleteSelected()` | Copia la selección a un `ArrayList` y la borra de `datos` |
-| Restore Rows | `restore()` | `datos.setAll(datosIniciales)` repone las 5 filas originales |
-
-**Detalle importante**: en `deleteSelected()` la selección se copia antes de borrar,
-porque `getSelectedItems()` es una lista *viva* ligada a la tabla: si se itera sobre ella
-mientras se modifica `datos`, JavaFX lanza `ConcurrentModificationException`.
-
-### Estilos (`css/estilos.css`)
-
-La clase `.borde-azul` dibuja el borde azul de 3 px alrededor del contenido
-(`-fx-border-color: #2f6fed`). El FXML la carga con `stylesheets="@../css/estilos.css"`.
-
-## Textos de la aplicación (`strings.properties`)
-
-Ningún texto está hardcodeado en el código: todos viven en
-`src/main/resources/strings.properties` (bundle `strings`, locale `es`).
-
-**En Java (`App.java`):**
-```java
-Locale locale = Locale.forLanguageTag("es");
-ResourceBundle strings = ResourceBundle.getBundle("strings", locale);
-FXMLLoader fxmlLoader = new FXMLLoader(url, strings);  // se pasa al loader
-stage.setTitle(strings.getString("window.title"));      // uso directo
+```bash
+mvn verify
 ```
 
-**En el FXML** se usa el prefijo `%` + la clave:
-```xml
-<Label text="%label.first.name" />
-<Button text="%button.add" />
+## Arquitectura
+
+Tres capas con dependencias hacia dentro: la interfaz y la base de datos dependen del dominio,
+nunca al revés.
+
+```mermaid
+flowchart LR
+    UI["ui · MainController<br/>(FXML + CSS)"] --> S["domain · PersonService"]
+    S --> V["domain · PersonValidator"]
+    S --> P{{"domain · PersonRepository<br/>(puerto)"}}
+    P -.-> J["infrastructure · SqlitePersonRepository"]
+    J --> DB[("SQLite<br/>~/.agendafx/agenda.db")]
+    M["infrastructure · SchemaMigrator"] -.-> DB
 ```
-El `FXMLLoader` resuelve `%clave` contra el bundle que recibió.
 
-**En el controlador** se usa el campo `resources`, que el `FXMLLoader` inyecta
-solo antes de llamar a `initialize()`:
-```java
-@FXML
-private ResourceBundle resources;
-...
-resources.getString("aviso.campos.obligatorios")
+```
+src/main/java/com/jairoben/agenda/
+├── AgendaApp.java               # arranque: configuración, migración, servicio, escena
+├── Launcher.java                # main sin extender Application (evita el error de módulos)
+├── config/AppConfig.java        # application.properties + ruta de la base de datos
+├── domain/
+│   ├── Person.java              # record inmutable
+│   ├── PersonValidator.java     # reglas de validación
+│   ├── PersonService.java       # casos de uso
+│   ├── PersonRepository.java    # puerto de persistencia
+│   └── ValidationException.java
+├── infrastructure/
+│   ├── ConnectionFactory.java
+│   ├── SchemaMigrator.java      # ejecuta resources/db/schema.sql
+│   ├── SqlitePersonRepository.java
+│   └── RepositoryException.java
+└── ui/MainController.java       # tabla, formulario, búsqueda y mensajes
 ```
 
-## Convenciones de nombres usadas
+## Decisiones de diseño
 
-| Prefijo | Tipo | Ejemplo |
-|---|---|---|
-| `tf` | TextField | `tfFirstName` |
-| `dp` | DatePicker | `dpBirth` |
-| `bt` | Button | `btAdd`, `btRestore` |
-| `tv` | TableView | `tvPeople` |
-| `col` | TableColumn | `colLastName` |
+- **`record` para el modelo**: un contacto es inmutable; modificar siempre crea una instancia nueva
+  y así no hay estados a medias entre la tabla y la base de datos.
+- **Puerto + adaptador**: `PersonService` solo conoce `PersonRepository`. Los tests del servicio
+  corren con un repositorio en memoria y no tocan disco.
+- **Validación fuera de la interfaz**: las mismas reglas las usan la UI y los tests, sin duplicar
+  condiciones en el controlador.
+- **Esquema idempotente**: `schema.sql` usa `CREATE ... IF NOT EXISTS`, así que se puede ejecutar en
+  cada arranque sin miedo.
+- **Una conexión por operación**: para una agenda personal es suficiente y evita fugas; si creciera,
+  el siguiente paso natural sería un pool (HikariCP).
+- **Errores separados**: `ValidationException` es un error de negocio con mensaje para el usuario;
+  `RepositoryException` es un fallo técnico que se registra en el log.
+
+## Tests
+
+```bash
+mvn verify
+```
+
+| Suite | Qué cubre |
+| --- | --- |
+| `PersonValidatorTest` (6) | Campos obligatorios, formato de correo, longitudes y fechas futuras |
+| `PersonServiceTest` (8) | Alta, normalización del correo, duplicados, edición, borrado y búsqueda |
+| `SqlitePersonRepositoryTest` (8) | CRUD real contra SQLite, orden, búsqueda y persistencia tras reiniciar |
+
+El workflow [`ci.yml`](.github/workflows/ci.yml) los ejecuta en GitHub Actions con JDK 21 en cada
+push y en cada pull request.
+
+## Sobre el nombre del repositorio
+
+El repositorio nació como un ejercicio de clase de `TableView` con una lista en memoria. Se ha
+reescrito por completo como aplicación con persistencia y arquitectura por capas; el nombre se
+mantiene por historial.
 
 ## Licencia
 
-Este proyecto está bajo la licencia [MIT](LICENSE).
-
+[MIT](LICENSE)
